@@ -2,6 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.FileWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 
@@ -11,6 +12,7 @@ public class Cliente extends JFrame {
     private JTextField authorField;
     private JTextArea resultArea;
     private JButton searchButton;
+    private JButton saveButton;
 
     private String serverIP = "localhost";
     private int serverPort = 6002;
@@ -36,6 +38,9 @@ public class Cliente extends JFrame {
         searchButton = new JButton("Buscar");
         inputPanel.add(searchButton);
 
+        saveButton = new JButton("Guardar");
+        inputPanel.add(saveButton);
+
         inputPanel.add(new JLabel());
 
         add(inputPanel, BorderLayout.NORTH);
@@ -51,6 +56,14 @@ public class Cliente extends JFrame {
                 buscarLibros();
             }
         });
+
+        saveButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                guardarResultados();
+            }
+        });
+
     }
 
     private void buscarLibros() {
@@ -94,6 +107,27 @@ public class Cliente extends JFrame {
                 }
             }
         }.execute();
+    }
+
+    private void guardarResultados() {
+        try {
+            String contenido = resultArea.getText();
+            if (contenido.isBlank()) {
+                JOptionPane.showMessageDialog(this, "No hay resultados para guardar.");
+                return;
+            }
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setDialogTitle("Guardar archivo");
+            int seleccion = fileChooser.showSaveDialog(this);
+            if (seleccion == JFileChooser.APPROVE_OPTION) {
+                FileWriter writer = new FileWriter(fileChooser.getSelectedFile());
+                writer.write(contenido);
+                writer.close();
+                JOptionPane.showMessageDialog(this, "Archivo guardado correctamente.");
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al guardar el archivo: " + e.getMessage());
+        }
     }
 
 
