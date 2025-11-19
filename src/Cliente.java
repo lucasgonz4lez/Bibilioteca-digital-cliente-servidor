@@ -31,12 +31,14 @@ public class Cliente extends JFrame {
         titleField = new JTextField();
         inputPanel.add(titleField);
 
+        searchButton = new JButton("Buscar");
+        inputPanel.add(searchButton);
+        
         inputPanel.add(new JLabel("Autor:"));
         authorField = new JTextField();
         inputPanel.add(authorField);
 
-        searchButton = new JButton("Buscar");
-        inputPanel.add(searchButton);
+        
 
         saveButton = new JButton("Guardar");
         inputPanel.add(saveButton);
