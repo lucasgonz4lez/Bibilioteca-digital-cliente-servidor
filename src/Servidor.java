@@ -51,17 +51,30 @@ public class Servidor implements Runnable{
     }
 
     @Override
-    public void run(){
-        String[] query = DataIO.ReadString(clientSocket).split(";");
+    public void run() {
+        String received = DataIO.ReadString(clientSocket);
 
-        ArrayList<Libro> results = filter(query[0],query[1]);
+        // No se que era lo de la query pero petaba por que no habia un; por parte del cliente
+        if (received == null || !received.contains(";")) {
+            System.out.println("Solicitud inválida recibida: " + received);
+            try { clientSocket.close(); } catch (Exception e) { e.printStackTrace(); }
+            return;
+        }
+
+        // Separar en dos partes máximo: título y autor
+        String[] query = received.split(";", 2);
+        String titleQuery = query[0].trim();
+        String authorQuery = query[1].trim();
+
+        ArrayList<Libro> results = filter(titleQuery, authorQuery);
 
         DataIO.WriteObject(clientSocket, results);
 
-        try{
+        try {
             clientSocket.close();
-        } catch (Exception e){}
+        } catch (Exception e) { e.printStackTrace(); }
     }
+
 
     static void main(String[] args) {
         ArrayList<Libro> books;
@@ -96,21 +109,21 @@ public class Servidor implements Runnable{
         ArrayList<Libro> content = new ArrayList<>();
 
         try{
-            //java.class.path = directorio de ejecución
             FileInputStream stream = new FileInputStream(System.getProperty("java.class.path")+"/libros.csv");
             InputStreamReader streamReader = new InputStreamReader(stream);
 
             var rows = streamReader.readAllLines();
-            String[] columns;
             for(String i : rows){
-                columns = i.split(";");
+                if(i.isBlank()) continue; // Ya no me da null pointer
+                String[] columns = i.split(";");
+                if(columns.length < 4) continue; // Esta cosa ignora las lineas malas
                 String title = columns[0];
                 String author = columns[1];
                 int releaseYear = Integer.parseInt(columns[2]);
                 String synopsis = columns[3];
-
-                content.add(new Libro(title,author,releaseYear,synopsis));
+                content.add(new Libro(title, author, releaseYear, synopsis));
             }
+
 
         }catch(Exception e){
             content = null;

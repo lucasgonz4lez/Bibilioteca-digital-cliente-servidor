@@ -1,26 +1,104 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.net.Socket;
 import java.util.ArrayList;
 
-public class Cliente {
+public class Cliente extends JFrame {
 
-    //este main es solo para probar si funciona lo del server
-    //deberías montar algo con java swing tbh (also quizás dejar al usuario poner una ip?)
-    //-Rvp
-    public static void main(String[] args){
-        try{
-            Socket socket = new Socket("localhost",6002);
-            DataIO.WriteString(socket,";tessEverest");
+    private JTextField titleField;
+    private JTextField authorField;
+    private JTextArea resultArea;
+    private JButton searchButton;
 
-            ArrayList<Libro> libros;
-            libros = (ArrayList<Libro>) DataIO.ReadObject(socket);
+    private String serverIP = "localhost";
+    private int serverPort = 6002;
 
-            if(libros==null){
-                System.out.println("!- No se han econtrado resultados");
+    public Cliente() {
+        super("Buscador de Libros");
+
+        setSize(500, 400);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        JPanel inputPanel = new JPanel(new GridLayout(3, 2, 5, 5));
+        inputPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+
+        inputPanel.add(new JLabel("Título:"));
+        titleField = new JTextField();
+        inputPanel.add(titleField);
+
+        inputPanel.add(new JLabel("Autor:"));
+        authorField = new JTextField();
+        inputPanel.add(authorField);
+
+        searchButton = new JButton("Buscar");
+        inputPanel.add(searchButton);
+
+        inputPanel.add(new JLabel());
+
+        add(inputPanel, BorderLayout.NORTH);
+
+        resultArea = new JTextArea();
+        resultArea.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(resultArea);
+        add(scrollPane, BorderLayout.CENTER);
+
+        searchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                buscarLibros();
             }
-            for(Libro i : libros){
-                System.out.println(i.toString());
+        });
+    }
+
+    private void buscarLibros() {
+        String title = titleField.getText().trim();
+        String author = authorField.getText().trim();
+
+        resultArea.setText("Buscando...");
+        searchButton.setEnabled(false);
+
+        new SwingWorker<ArrayList<Libro>, Void>() {
+            @Override
+            protected ArrayList<Libro> doInBackground() {
+                try (Socket socket = new Socket(serverIP, serverPort)) {
+                    DataIO.WriteString(socket, title + ";" + author);
+                    Object response = DataIO.ReadObject(socket);
+                    if (response != null) {
+                        return (ArrayList<Libro>) response;
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                return null;
             }
-            socket.close();
-        }catch(Exception e){}
+
+            @Override
+            protected void done() {
+                try {
+                    ArrayList<Libro> results = get();
+                    resultArea.setText("");
+                    if (results != null && !results.isEmpty()) {
+                        for (Libro libro : results) {
+                            resultArea.append(libro.toString() + "\n-------------------------\n");
+                        }
+                    } else {
+                        resultArea.setText("No se encontraron libros que coincidan con la búsqueda.");
+                    }
+                } catch (Exception e) {
+                    resultArea.setText("Error al conectarse al servidor: " + e.getMessage());
+                } finally {
+                    searchButton.setEnabled(true);
+                }
+            }
+        }.execute();
+    }
+
+
+    public static void main(String[] args) {
+            Cliente cliente = new Cliente();
+            cliente.setVisible(true);
     }
 }
